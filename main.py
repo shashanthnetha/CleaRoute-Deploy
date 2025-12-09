@@ -9,15 +9,19 @@ import datetime
 
 app = FastAPI()
 
-# Load the Super Brain (Trained on 3k+ images)
-# model = YOLO('best.pt') 
-model = YOLO('yolov8n.pt') # This downloads the tiny model automatically
+# --- LOAD YOUR CUSTOM MODEL ---
+# Using the Medium model you trained on 3,000+ images
+try:
+    model = YOLO('best.pt')
+    print("✅ Successfully loaded Custom Pothole Model (best.pt)")
+except:
+    print("⚠️ Error: 'best.pt' not found. Downloading standard Nano model as backup...")
+    model = YOLO('yolov8n.pt')
 
 # --- DATABASE SETUP ---
 def init_db():
-    conn = sqlite3.connect('clearoute_v2.db') # New DB file for V2
+    conn = sqlite3.connect('clearoute_local.db')
     c = conn.cursor()
-    # Create table with Source tracking
     c.execute('''CREATE TABLE IF NOT EXISTS traffic_data 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                   timestamp TEXT, 
@@ -27,12 +31,11 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Initialize DB on startup
 init_db()
 
 @app.get("/")
 def home():
-    return {"status": "CleaRoute V2 (Pro) Online"}
+    return {"status": "CleaRoute Local Server Online"}
 
 @app.post("/analyze")
 async def analyze_road(
@@ -43,27 +46,27 @@ async def analyze_road(
     image_data = await file.read()
     image = Image.open(io.BytesIO(image_data))
     
-    # 2. Run AI (The Medium model is smarter, so we trust it more)
-    results = model(image)
+    # 2. Run AI (Confidence 0.25 is standard, adjust if needed)
+    results = model(image, conf=0.25)
     
     # 3. Draw Boxes
     annotated_frame = results[0].plot()
     annotated_frame_rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(annotated_frame_rgb)
 
-    # 4. Convert to Base64 for display
+    # 4. Convert to Base64
     buff = io.BytesIO()
     pil_img.save(buff, format="JPEG")
     img_str = base64.b64encode(buff.getvalue()).decode("utf-8")
 
     # 5. Get Stats
+    # Note: 'Pothole' is usually class 0 in custom datasets, but we count ALL detections here
     detection_count = len(results[0].boxes)
-    # Simple logic: If detections > 0, it's bad.
     quality_score = "Bad" if detection_count > 0 else "Good"
 
-    # 6. Save to V2 Database
+    # 6. Save to Database
     try:
-        conn = sqlite3.connect('clearoute_v2.db')
+        conn = sqlite3.connect('clearoute_local.db')
         c = conn.cursor()
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c.execute("INSERT INTO traffic_data (timestamp, source, potholes, quality) VALUES (?, ?, ?, ?)", 
@@ -81,17 +84,16 @@ async def analyze_road(
 
 @app.get("/history")
 def get_history():
-    conn = sqlite3.connect('clearoute_v2.db')
+    conn = sqlite3.connect('clearoute_local.db')
     c = conn.cursor()
     c.execute("SELECT timestamp, source, potholes, quality FROM traffic_data ORDER BY id DESC")
     data = c.fetchall()
     conn.close()
-    # Return as 'time' and 'status' to match Dashboard V2
     return [{"time": row[0], "source": row[1], "potholes": row[2], "status": row[3]} for row in data]
 
 @app.delete("/clear_history")
 def clear_history():
-    conn = sqlite3.connect('clearoute_v2.db')
+    conn = sqlite3.connect('clearoute_local.db')
     c = conn.cursor()
     c.execute("DELETE FROM traffic_data")
     conn.commit()
