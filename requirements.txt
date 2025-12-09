@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 ultralytics
-opencv-python-headless
 streamlit
 fpdf
 python-multipart
@@ -9,4 +8,5 @@ requests
 pillow
 pandas
 numpy
+opencv-python
 watchdog
