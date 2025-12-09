@@ -102,7 +102,7 @@ with tab1:
             with st.spinner("AI Analyzing..."):
                 files = {"file": uploaded_file.getvalue()}
                 data_payload = {"source_name": uploaded_file.name}
-                response = requests.post(API_URL, files=files, data=data_payload)
+                response = requests.post(API_URL, files=files, data=data_payload, timeout=120)
                 data = response.json()
                 
                 with col1:

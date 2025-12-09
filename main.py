@@ -10,7 +10,8 @@ import datetime
 app = FastAPI()
 
 # Load the Super Brain (Trained on 3k+ images)
-model = YOLO('best.pt')
+# model = YOLO('best.pt') 
+model = YOLO('yolov8n.pt') # This downloads the tiny model automatically
 
 # --- DATABASE SETUP ---
 def init_db():
