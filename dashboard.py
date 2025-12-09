@@ -7,14 +7,26 @@ import base64
 import io
 import pandas as pd
 from fpdf import FPDF
+import os  # <--- NEW IMPORT
 
 # --- CONFIG ---
 st.set_page_config(page_title="CleaRoute Pro", layout="wide")
-API_URL = "http://127.0.0.1:8000/analyze"
-HISTORY_URL = "http://127.0.0.1:8000/history"
-CLEAR_URL = "http://127.0.0.1:8000/clear_history"
 
-st.title("🚧 CleaRoute Pro: AI Infrastructure Monitor")
+# GET THE CLOUD URL
+# If running on Render, it uses the BACKEND_URL variable.
+# If running on Laptop, it falls back to localhost.
+BASE_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+
+# Remove trailing slash if present to avoid double slashes
+if BASE_URL.endswith("/"):
+    BASE_URL = BASE_URL[:-1]
+
+API_URL = f"{BASE_URL}/analyze"
+HISTORY_URL = f"{BASE_URL}/history"
+CLEAR_URL = f"{BASE_URL}/clear_history"
+
+st.title("🚧 CleaRoute: Intelligent Road Monitoring System")
+# ... (Rest of the code remains exactly the same) ...
 
 # --- HELPER FUNCTIONS ---
 def decode_image(base64_string):
